@@ -1,158 +1,171 @@
-import React, { useState } from "react";
-import DaumPostcodeEmbed from "react-daum-postcode";
-import CheckBox from "./CheckBox";
+import { useState } from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
+import { useNavigate } from "react-router";
 import { styled } from "styled-components";
-import useValidation from "../../hooks/useValidation";
+import CheckBox from "./CheckBox";
+import DaumPostcodeEmbed from "react-daum-postcode";
+
+interface IFormInput {
+  name: string;
+  email: string;
+  address: string;
+  detailAddress: string;
+  password: string;
+  passwordConfirm: string;
+  phone: string;
+  birth: string;
+}
 const SignUp = () => {
-  const [userInfo, setUserInfo] = useState({
-    name: "",
-    email: "",
-    address: "",
-    detailAddress: "",
-    password: "",
-    passwordConfirm: "",
-    phone: "",
-    year: "",
-    month: "",
-    day: "",
-  });
-
+  const checkList = [
+    {
+      id: "1",
+      value: "개인정보 수집 및 이용 동의 (필수)",
+      required: true,
+    },
+    {
+      id: "2",
+      value: "이용약관동의(필수)",
+      required: true,
+    },
+    {
+      id: "3",
+      value: "SNS정보 공개 동의(선택)",
+      required: false,
+    },
+  ];
+  const navigate = useNavigate();
   const {
-    name,
-    email,
-    address,
-    phone,
-    password,
-    passwordConfirm,
-    detailAddress,
-  } = userInfo;
+    register,
+    handleSubmit,
+    getValues,
+    setValue,
+    formState: { errors },
+  } = useForm<IFormInput>({ mode: "onChange" });
 
+  //주소 모달창 띄우는 state
   const [openPostModalValue, setOpenPostModalValue] = useState<boolean>(false);
   const [checkedBox, setCheckedBox] = useState<string[]>([]);
-  const data = [
-    { title: "개인정보 수집 및 이용 동의(필수)" },
-    { title: "이용약관동의(필수)" },
-  ];
-  //유저 정보 이벤트 핸들러
-  const UserInfoChangeHandler = (e: React.FocusEvent<HTMLInputElement>) => {
-    const { value, name } = e.target;
-    setUserInfo({ ...userInfo, [name]: value });
-  };
-  //유저 주소 이벤트 핸들러
-  const UserInfoAddressChangeHandler = (address: string) => {
-    setUserInfo({ ...userInfo, address: address });
-  };
   //주소모달창
   const openPostModalHandler = () => {
-    const value = openPostModalValue ? false : true;
-    setOpenPostModalValue(value);
-  };
-  //회원가입폼제출
-  const SignUpFormSubmitHandler = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const value = useValidation(userInfo);
-
-    if (!value) {
-      return;
-    } else {
-      localStorage.setItem("id", email);
-      localStorage.setItem("password", password);
-    }
+    setOpenPostModalValue((prev) => !prev);
   };
   //모두 동의합니다 체크박스
-  const AllCheckBoxChekedHandler = (checked: boolean) => {
-    if (checked) {
-      const checkedItemArray: string[] = [];
-      data.forEach((data) => checkedItemArray.push(data.title));
-      setCheckedBox(checkedItemArray);
+  const AllCheckBoxChekedHandler = ({
+    target,
+  }: React.ChangeEvent<HTMLInputElement>) => {
+    if (target.checked) {
+      setCheckedBox(checkList.map((item) => item.id));
     } else {
       setCheckedBox([]);
     }
   };
   //그냥 체크박스
-  const CheckBoxcheckedHandler = (code: string, isChecked: boolean) => {
+  const CheckBoxcheckedHandler = (id: string, isChecked: boolean) => {
     if (isChecked) {
-      setCheckedBox([...checkedBox, code]);
-    } else if (!isChecked && checkedBox.find((one) => one === code)) {
-      const filter = checkedBox.filter((one) => one !== code);
-      setCheckedBox([...filter]);
+      setCheckedBox((prev) => [...prev, id]); //불변성을 지키기 위한 원본 배열 복사 후 추가
+    } else {
+      setCheckedBox(
+        checkedBox.filter((item) => {
+          return item !== id;
+        })
+      );
     }
   };
 
+  //제출했을때 이벤트 핸들러
+  const onSubmitHandler: SubmitHandler<IFormInput> = (data) => {
+    console.log("회원가입 됨");
+    //로컬스토리지에 회원 이메일과 비밀번호 저장
+    localStorage.setItem("useremail", getValues("email"));
+    localStorage.setItem("userpassword", getValues("password"));
+    //다시 로그인 화면으로 이동
+    navigate("/");
+  };
   return (
-    <SignUpForm onSubmit={SignUpFormSubmitHandler}>
+    <SignUpForm onSubmit={handleSubmit(onSubmitHandler)}>
       <h1>계정정보 입력</h1>
       <SignUpFormInput>
         <label htmlFor="name">이름</label>
         <input
           id="name"
-          name="name"
-          value={name}
           type="text"
-          onChange={UserInfoChangeHandler}
+          {...register("name", { required: "이름은 필수입니다." })}
         />
+        {errors.name && <small>{errors.name.message}</small>}
       </SignUpFormInput>
       <SignUpFormInput>
         <label htmlFor="phone">전화번호</label>
         <input
           type="tel"
           id="phone"
-          name="phone"
-          onChange={UserInfoChangeHandler}
-          value={phone}
+          {...register("phone", {
+            required: "'-'없이 입력해주세요. 예)01012341234",
+          })}
         />
-        <span>'-'없이 입력해주세요. 예)01012341234</span>
+        {errors.phone && <small>{errors.phone.message}</small>}
       </SignUpFormInput>
       <SignUpFormInput>
         <label htmlFor="password">비밀번호</label>
         <input
           type="password"
           id="password"
-          name="password"
-          onChange={UserInfoChangeHandler}
-          value={password}
+          {...register("password", {
+            required: "비밀번호는 필수 입력입니다.",
+            pattern: {
+              value: /^(?=.*[a-zA-Z])(?=.*[!@#$%^*+=-])(?=.*[0-9]).{8,20}$/,
+              message:
+                "영어 대/소문자,숫자,특수문자를 조합해 비밀번호를 만들어주세요..",
+            },
+          })}
         />
-        <span>
-          영어 대/소문자,숫자,특수문자를 조합해 비밀번호를 만들어주세요.
-        </span>
+        {errors.password && <small>{errors.password.message}</small>}
       </SignUpFormInput>
       <SignUpFormInput>
-        <label htmlFor="password">비밀번호 확인</label>
+        <label htmlFor="passwordConfirm">비밀번호 확인</label>
         <input
           type="password"
-          id="password"
-          name="password"
-          onChange={UserInfoChangeHandler}
-          value={passwordConfirm}
+          id="passwordConfirm"
+          {...register("passwordConfirm", {
+            required: "위의 비밀번호와 다릅니다.",
+            validate: {
+              passWordConfirm: (value) => {
+                return (
+                  value === getValues("password") || "위의 비밀번호와 다릅니다."
+                );
+              },
+            },
+          })}
         />
-        <span>위에 입력한 비밀번호와 같은 비밀번호를 적어주세요.</span>
+        {errors.passwordConfirm && (
+          <small>{errors.passwordConfirm.message}</small>
+        )}
       </SignUpFormInput>
-      {/* <label htmlFor="birth">생년월일</label>
-      <select onChange={SelectUserInfoChangeHandler} name="year" value={year}>
-        {years.map((date) => (
-          <option value={date}>{date}</option>
-        ))}
-      </select>
-      <select onChange={SelectUserInfoChangeHandler} name="month" value={month}>
-        {months.map((date) => (
-          <option value={date}>{date}</option>
-        ))}
-      </select>
-      <select onChange={SelectUserInfoChangeHandler} name="day" value={day}>
-        {days.map((date) => (
-          <option value={date}>{date}</option>
-        ))}
-      </select> */}
+      <SignUpFormInput>
+        <label htmlFor="birth">생년월일</label>
+        <input
+          type="date"
+          id="birth"
+          placeholder="날짜 선택"
+          {...register("birth", { required: "생년월일은 필수 입력입니다." })}
+        ></input>
+        {errors.birth && <small>{errors.birth.message}</small>}
+      </SignUpFormInput>
       <SignUpFormInput>
         <label htmlFor="email">이메일</label>
         <input
           type="text"
           id="email"
-          name="email"
           placeholder="이메일"
-          onChange={UserInfoChangeHandler}
-          value={email}
+          {...register("email", {
+            required: "이메일은 필수 입력입니다.",
+            pattern: {
+              value:
+                /^([0-9a-zA-Z_\.-]+)@([0-9a-zA-Z_-]+)(\.[0-9a-zA-Z_-]+){1,2}$/,
+              message: "이메일 형식에 맞지 않습니다.",
+            },
+          })}
         />
+        {errors.email && <small>{errors.email.message}</small>}
       </SignUpFormInput>
       <SignUpFormInput>
         <label htmlFor="address">주소</label>
@@ -161,28 +174,24 @@ const SignUp = () => {
         </button>
         <input
           id="address"
-          name="address"
           type="text"
           placeholder="주소"
-          value={address}
-          onChange={UserInfoChangeHandler}
+          {...register("address", { required: "주소는 필수입니다." })}
           readOnly
         />
         <input
           id="detailAddress"
-          name="detailAddress"
           type="text"
           placeholder="상세주소"
-          value={detailAddress}
-          onChange={UserInfoChangeHandler}
+          {...register("detailAddress", { required: "상세주소는 필수입니다." })}
         />
       </SignUpFormInput>
       {openPostModalValue && (
         <DaumPostcodeEmbed
           autoClose={false}
-          onComplete={(event) => {
+          onComplete={({ address }) => {
             openPostModalHandler();
-            UserInfoAddressChangeHandler(event.address);
+            setValue("address", address);
           }}
         ></DaumPostcodeEmbed>
       )}
@@ -190,18 +199,19 @@ const SignUp = () => {
         <label>
           <input
             type="checkbox"
-            onChange={(e) => {
-              AllCheckBoxChekedHandler(e.target.checked);
-            }}
-            checked={checkedBox.length === 2}
+            onChange={AllCheckBoxChekedHandler}
+            checked={checkedBox.length === checkList.length ? true : false}
           />
           전체 동의
         </label>
-        {data.map((data) => (
+        {checkList.map((checkList) => (
           <CheckBox
-            data={data.title}
-            checkedBox={checkedBox}
+            key={checkList.id}
+            id={checkList.id}
             CheckBoxcheckedHandler={CheckBoxcheckedHandler}
+            checked={checkedBox.includes(checkList.id) ? true : false}
+            required={checkList.required}
+            value={checkList.value}
           />
         ))}
       </SignUpFormInput>
@@ -224,7 +234,10 @@ const SignUpForm = styled.form`
     margin-bottom: 1em;
     color: black;
   }
-
+  small {
+    color: red;
+    font-weight: 400;
+  }
   button {
     width: 100%;
     height: 3.8em;
@@ -236,6 +249,8 @@ const SignUpForm = styled.form`
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-bottom: 1em;
+    cursor: pointer;
   }
 `;
 
@@ -263,7 +278,9 @@ const SignUpFormInput = styled.div`
     width: 1.4em;
     height: 1.4em;
   }
-
+  input[type="date"] {
+    font-family: auto;
+  }
   span {
     font-weight: 400;
   }

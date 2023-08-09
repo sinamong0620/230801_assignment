@@ -26,8 +26,8 @@ const SignIn = () => {
       return;
     }
     if (
-      localStorage.getItem("id") === userId &&
-      localStorage.getItem("password") === userPassword
+      localStorage.getItem("useremail") === userId &&
+      localStorage.getItem("userpassword") === userPassword
     ) {
       localStorage.setItem("isLoggedIn", "LOGGED_IN");
       setCookie("id", userId);
@@ -40,7 +40,6 @@ const SignIn = () => {
   };
   const onChangeUserIdHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUserId(e.target.value);
-    
   };
   const onChangeUserPasswordHandler = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -86,7 +85,6 @@ const SignIn = () => {
 export default SignIn;
 
 const LoginForm = styled.div`
-  height: 100vh;
   form {
     width: 30%;
     margin: 15% auto;
@@ -121,6 +119,7 @@ const LoginForm = styled.div`
     justify-content: center;
     align-items: center;
     margin-bottom: 3em;
+    cursor: pointer;
   }
 
   ul {

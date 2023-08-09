@@ -1,39 +1,37 @@
 import React, { useEffect, useState } from "react";
-import styled from "styled-components";
+import { styled } from "styled-components";
 
 interface IProps {
-  data: string;
-  checkedBox: string[];
-  CheckBoxcheckedHandler: (code: string, isChecked: boolean) => void;
+  key: string;
+  id: string;
+  value: string;
+  CheckBoxcheckedHandler: (id: string, isChecked: boolean) => void;
+  checked: boolean;
+  required: boolean;
 }
-const CheckBox = (props: IProps) => {
-  const [isCheckBox, setIsCheckBox] = useState<boolean>(false);
-  const OnCheck = (event: React.ChangeEvent<HTMLInputElement>) => {
-    props.CheckBoxcheckedHandler(event.target.value, event.target.checked);
-    setIsCheckBox(event.target.checked);
+const CheckBox = ({
+  id,
+  checked,
+  CheckBoxcheckedHandler,
+  required,
+  value,
+}: IProps) => {
+  const OnCheck = ({ target }: React.ChangeEvent<HTMLInputElement>) => {
+    CheckBoxcheckedHandler(target.id, target.checked);
   };
 
-  useEffect(() => {
-    if (props.checkedBox.includes(props.data)) {
-      setIsCheckBox(true);
-    } else {
-      setIsCheckBox(false);
-    }
-  }, [props.checkedBox]);
   return (
     <SignUpAgreementInputCss>
       <label>
         <input
+          id={id}
           type="checkbox"
-          name="check"
-          value={props.data}
-          checked={isCheckBox}
+          checked={checked}
           onChange={OnCheck}
-          required
+          required={required}
         />
-        {props.data}
+        {value}
       </label>
-      <img src="/image/next.png" width="25" alt="agreement" />
     </SignUpAgreementInputCss>
   );
 };
